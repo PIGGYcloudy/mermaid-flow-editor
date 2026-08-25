@@ -9,8 +9,13 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  test-and-build:
+    name: Node.js (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,7 +25,8 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
-      - run: npm audit --omit=dev --audit-level=high
+      - if: runner.os == 'Linux'
+        run: npm audit --omit=dev --audit-level=high
 
   docker:
     runs-on: ubuntu-latest

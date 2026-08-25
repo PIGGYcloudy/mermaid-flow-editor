@@ -56,6 +56,19 @@ npm run dev
 API URL 與模型會保存在瀏覽器 localStorage；API Key 只保存在
 `sessionStorage`，關閉分頁後即清除。應用程式不會把金鑰寫入資料庫或磁碟。
 
+### Windows
+
+在 PowerShell 使用相同流程即可；複製環境檔的指令為：
+
+```powershell
+npm ci
+Copy-Item .env.example .env
+npm run server
+```
+
+再開一個 PowerShell 視窗執行 `npm run dev`。CI 會在 `windows-latest`
+自動驗證安裝、後端測試與 production build。
+
 ## Docker
 
 ```bash
@@ -64,6 +77,9 @@ docker compose up -d --build
 ```
 
 開啟 `http://localhost:3000`。帶有版本 tag 的 Release 與手動 workflow 會發布：
+
+Windows 使用 Docker Desktop 的 Linux containers 模式即可執行相同的
+`docker compose` 指令。
 
 ```text
 ghcr.io/piggycloudy/mermaid-flow-editor

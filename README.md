@@ -58,6 +58,19 @@ The API URL and model are saved in localStorage. The API key is kept only in
 `sessionStorage` and is cleared when the tab closes. The application never
 writes it to a database or disk.
 
+### Windows
+
+Use the same flow in PowerShell, with this command to copy the environment file:
+
+```powershell
+npm ci
+Copy-Item .env.example .env
+npm run server
+```
+
+Open a second PowerShell window and run `npm run dev`. CI validates install,
+server tests, and the production build on `windows-latest`.
+
 ## Docker
 
 ```bash
@@ -66,6 +79,9 @@ docker compose up -d --build
 ```
 
 Open `http://localhost:3000`. Tagged releases and the manual workflow publish:
+
+On Windows, use Docker Desktop in Linux containers mode and run the same
+`docker compose` command.
 
 ```text
 ghcr.io/piggycloudy/mermaid-flow-editor

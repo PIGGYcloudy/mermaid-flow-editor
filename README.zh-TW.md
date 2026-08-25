@@ -30,13 +30,67 @@ OpenAI API 格式的 BYOK AI 助手。
 
 不使用 AI 時，編輯、預覽與匯出功能仍可正常使用。
 
-## 快速開始
+## 使用 Docker 部署
 
-需求：Node.js 22.12 或更新版本。
+Docker 是本專案支援的正式環境部署方式。Linux 使用 Docker Engine，Windows
+使用 Docker Desktop；Windows 請切換到 Linux containers 模式。兩個平台使用
+相同的 Compose 設定。
+
+Linux：
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+```
+
+Windows PowerShell：
+
+```powershell
+Copy-Item .env.example .env
+docker compose up -d --build
+```
+
+部署完成後開啟 `http://localhost:3000`。使用下列指令確認狀態與查看 log：
+
+```bash
+docker compose ps
+docker compose logs -f app
+```
+
+停止並移除應用程式容器：
+
+```bash
+docker compose down
+```
+
+帶有版本 tag 的 Release 與手動發布 workflow 也會提供預先建置的 image：
+
+```text
+ghcr.io/piggycloudy/mermaid-flow-editor-byok
+```
+
+容器提供 `/healthz` 端點，Compose 已設定健康檢查與 `unless-stopped` 自動重啟
+策略。目前不提供原生 Node.js 背景服務的正式部署文件；production 環境請使用
+Docker。
+
+## 本機開發
+
+本機開發需要 Node.js 22.12 或更新版本。以下會啟動前後端兩個 process，僅供
+開發使用，不是 production 部署方式。
+
+Linux 或 macOS：
 
 ```bash
 npm ci
 cp .env.example .env
+npm run server
+```
+
+Windows PowerShell：
+
+```powershell
+npm ci
+Copy-Item .env.example .env
 npm run server
 ```
 
@@ -46,7 +100,8 @@ npm run server
 npm run dev
 ```
 
-開啟 `http://localhost:5173`。若要使用 AI，請在介面輸入：
+開啟 `http://localhost:5173`。CI 會在 Linux 與 Windows 自動驗證安裝、後端
+測試與 production build。若要使用 AI，請在介面輸入：
 
 - **API URL：**相容 OpenAI API 格式的 base URL，例如
   `https://api.openai.com/v1`
@@ -55,35 +110,6 @@ npm run dev
 
 API URL 與模型會保存在瀏覽器 localStorage；API Key 只保存在
 `sessionStorage`，關閉分頁後即清除。應用程式不會把金鑰寫入資料庫或磁碟。
-
-### Windows
-
-在 PowerShell 使用相同流程即可；複製環境檔的指令為：
-
-```powershell
-npm ci
-Copy-Item .env.example .env
-npm run server
-```
-
-再開一個 PowerShell 視窗執行 `npm run dev`。CI 會在 `windows-latest`
-自動驗證安裝、後端測試與 production build。
-
-## Docker
-
-```bash
-cp .env.example .env
-docker compose up -d --build
-```
-
-開啟 `http://localhost:3000`。帶有版本 tag 的 Release 與手動 workflow 會發布：
-
-Windows 使用 Docker Desktop 的 Linux containers 模式即可執行相同的
-`docker compose` 指令。
-
-```text
-ghcr.io/piggycloudy/mermaid-flow-editor-byok
-```
 
 ## 公開部署
 

@@ -31,9 +31,55 @@ assistant for OpenAI-compatible APIs.
 
 Editing, previewing, and exporting work without configuring AI.
 
-## Quick start
+## Deploy with Docker
 
-Requires Node.js 22.12 or newer.
+Docker is the supported production deployment path. The same Compose workflow
+works with Docker Engine on Linux and Docker Desktop on Windows. On Windows,
+use Docker Desktop in Linux containers mode.
+
+Linux:
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+```
+
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+docker compose up -d --build
+```
+
+Open `http://localhost:3000`. Confirm the deployment and inspect logs with:
+
+```bash
+docker compose ps
+docker compose logs -f app
+```
+
+Stop and remove the application container with:
+
+```bash
+docker compose down
+```
+
+Tagged releases and the manual publish workflow also provide a prebuilt image:
+
+```text
+ghcr.io/piggycloudy/mermaid-flow-editor-byok
+```
+
+The container includes a `/healthz` endpoint and uses the Compose health check
+and `unless-stopped` restart policy. Native Node.js deployment as a background
+service is not currently documented or supported; use Docker for production.
+
+## Local development
+
+Local development requires Node.js 22.12 or newer. This two-process workflow is
+for development, not production deployment.
+
+Linux or macOS:
 
 ```bash
 npm ci
@@ -41,13 +87,22 @@ cp .env.example .env
 npm run server
 ```
 
-In a second terminal:
+Windows PowerShell:
+
+```powershell
+npm ci
+Copy-Item .env.example .env
+npm run server
+```
+
+In a second terminal, run:
 
 ```bash
 npm run dev
 ```
 
-Open `http://localhost:5173`. To use AI, enter:
+Open `http://localhost:5173`. CI validates installation, server tests, and the
+production build on both Linux and Windows. To use AI, enter:
 
 - **API URL:** an OpenAI-compatible base URL, such as
   `https://api.openai.com/v1`
@@ -57,35 +112,6 @@ Open `http://localhost:5173`. To use AI, enter:
 The API URL and model are saved in localStorage. The API key is kept only in
 `sessionStorage` and is cleared when the tab closes. The application never
 writes it to a database or disk.
-
-### Windows
-
-Use the same flow in PowerShell, with this command to copy the environment file:
-
-```powershell
-npm ci
-Copy-Item .env.example .env
-npm run server
-```
-
-Open a second PowerShell window and run `npm run dev`. CI validates install,
-server tests, and the production build on `windows-latest`.
-
-## Docker
-
-```bash
-cp .env.example .env
-docker compose up -d --build
-```
-
-Open `http://localhost:3000`. Tagged releases and the manual workflow publish:
-
-On Windows, use Docker Desktop in Linux containers mode and run the same
-`docker compose` command.
-
-```text
-ghcr.io/piggycloudy/mermaid-flow-editor-byok
-```
 
 ## Internet-facing deployments
 

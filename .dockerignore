@@ -1,0 +1,15 @@
+node_modules
+dist
+.git
+.github
+.claude
+.data
+.DS_Store
+AUTH_ACCESS_KEY_HANDOFF.md
+npm-debug.log
+
+*.tsbuildinfo
+vite.config.d.ts
+vite.config.js
+.env
+.env.*

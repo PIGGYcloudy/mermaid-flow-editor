@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.data/
+.claude/
+AUTH_ACCESS_KEY_HANDOFF.md
+*.tsbuildinfo
+vite.config.d.ts
+.env
+.env.*
+!.env.example
+npm-debug.log*

@@ -9,6 +9,7 @@ RUN npm run build
 
 FROM node:22-bookworm-slim AS runtime
 WORKDIR /app
+LABEL org.opencontainers.image.source="https://github.com/PIGGYcloudy/mermaid-flow-editor"
 ENV NODE_ENV=production
 ENV PORT=3000
 COPY package*.json ./

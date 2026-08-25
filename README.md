@@ -84,7 +84,7 @@ On Windows, use Docker Desktop in Linux containers mode and run the same
 `docker compose` command.
 
 ```text
-ghcr.io/piggycloudy/mermaid-flow-editor
+ghcr.io/piggycloudy/mermaid-flow-editor-byok
 ```
 
 ## Internet-facing deployments

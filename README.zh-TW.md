@@ -82,7 +82,7 @@ Windows 使用 Docker Desktop 的 Linux containers 模式即可執行相同的
 `docker compose` 指令。
 
 ```text
-ghcr.io/piggycloudy/mermaid-flow-editor
+ghcr.io/piggycloudy/mermaid-flow-editor-byok
 ```
 
 ## 公開部署

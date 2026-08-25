@@ -17,6 +17,8 @@ assistant for OpenAI-compatible APIs.
 > credentials. A user-provided API key stays in browser `sessionStorage` and is
 > sent through the application proxy only for that user's AI requests.
 
+![Mermaid Flow Editor feature tour: workspace zoom, resizable and movable windows, background switching, and AI rewriting](docs/assets/mermaid-flow-editor-feature-tour.gif)
+
 ## Features
 
 - Monaco Mermaid editor with live rendering and readable syntax errors
@@ -112,6 +114,14 @@ production build on both Linux and Windows. To use AI, enter:
 The API URL and model are saved in localStorage. The API key is kept only in
 `sessionStorage` and is cleared when the tab closes. The application never
 writes it to a database or disk.
+
+### BYOK model setup
+
+Expand **Model settings** to connect an OpenAI-compatible endpoint. AI is
+optional: editing, previewing, and exporting remain available without an API
+URL or key.
+
+![Expanded BYOK settings for an OpenAI-compatible API](docs/assets/mermaid-flow-editor-byok-settings.png)
 
 ## Internet-facing deployments
 

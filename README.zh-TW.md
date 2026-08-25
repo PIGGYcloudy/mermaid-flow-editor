@@ -16,6 +16,8 @@ OpenAI API 格式的 BYOK AI 助手。
 > API Key 只存在瀏覽器 `sessionStorage`，並僅在該使用者發出 AI 請求時經由
 > 應用程式 proxy 送往所選的 API endpoint。
 
+![Mermaid Flow Editor 功能導覽：畫布縮放、視窗縮放與拖曳、背景切換及 AI 改寫](docs/assets/mermaid-flow-editor-feature-tour.gif)
+
 ## 主要功能
 
 - Monaco Mermaid 編輯器、即時渲染及可理解的語法錯誤
@@ -110,6 +112,13 @@ npm run dev
 
 API URL 與模型會保存在瀏覽器 localStorage；API Key 只保存在
 `sessionStorage`，關閉分頁後即清除。應用程式不會把金鑰寫入資料庫或磁碟。
+
+### BYOK 模型設定
+
+展開「模型設定」即可連接相容 OpenAI API 格式的 endpoint。AI 並非必要功能；
+沒有設定 API URL 或 Key 時，仍可正常編輯、預覽及匯出圖表。
+
+![展開的 OpenAI-compatible API BYOK 設定](docs/assets/mermaid-flow-editor-byok-settings.png)
 
 ## 公開部署
 

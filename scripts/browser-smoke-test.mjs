@@ -1098,7 +1098,7 @@ try {
     'Manual rerender should preserve a manually selected viewport.'
   );
 
-  await execute(`document.querySelector('button[title="適合預覽視窗"]').click();`);
+  await execute(`document.querySelector('button[title="適合預覽視窗 (Fit)"]').click();`);
   await waitFor(
     () =>
       execute(`
@@ -1124,10 +1124,20 @@ try {
       `),
     'fit preview after window resize'
   );
-  await execute(`document.querySelector('button[title="以原始大小顯示"]').click();`);
+  await execute(`document.querySelector('button[title="以原始大小顯示 (100%)"]').click();`);
   await waitFor(
     () => execute(`return document.querySelector('.zoom-readout').textContent.trim() === '100%';`),
     'preview original size'
+  );
+  await execute(`document.querySelector('button[title="配合寬度"]').click();`);
+  await waitFor(
+    () =>
+      execute(`
+        const stage = document.querySelector('.diagram-stage');
+        const canvas = document.querySelector('.diagram-canvas');
+        return Boolean(stage && canvas && canvas.getBoundingClientRect().width > 0);
+      `),
+    'fit preview width'
   );
   await execute(`document.querySelector('button[title="放大預覽"]').click();`);
 
@@ -1384,7 +1394,7 @@ try {
   );
   assert.equal(
     await execute(`
-      return ['縮小預覽', '放大預覽', '以原始大小顯示', '適合預覽視窗']
+      return ['縮小預覽', '放大預覽', '以原始大小顯示 (100%)', '配合寬度', '適合預覽視窗 (Fit)']
         .every((title) => document.querySelector('button[title="' + title + '"]').disabled);
     `),
     true

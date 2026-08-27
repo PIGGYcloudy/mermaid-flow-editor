@@ -134,6 +134,14 @@ type PreparedSvg = {
   height: number;
 };
 
+const EXPORT_SCALES = [
+  { value: 1, label: '1x' },
+  { value: 2, label: '2x' },
+  { value: 4, label: '4x' }
+] as const;
+
+type ExportScale = (typeof EXPORT_SCALES)[number]['value'];
+
 type WindowInteraction = {
   id: WorkspaceWindowId;
   mode: 'drag' | 'resize';
@@ -440,6 +448,25 @@ function fitDiagramViewport(
   };
 }
 
+function fitDiagramWidthViewport(
+  viewportWidth: number,
+  viewportHeight: number,
+  diagram: DiagramSize
+): DiagramViewport {
+  const availableWidth = Math.max(1, viewportWidth - PREVIEW_FIT_PADDING * 2);
+  const scale = clamp(
+    availableWidth / diagram.width,
+    MIN_PREVIEW_SCALE,
+    MAX_PREVIEW_SCALE
+  );
+  return {
+    scale,
+    x: (viewportWidth - diagram.width * scale) / 2,
+    y: PREVIEW_FIT_PADDING,
+    mode: 'custom'
+  };
+}
+
 function centerDiagramViewport(
   viewportWidth: number,
   viewportHeight: number,
@@ -645,6 +672,7 @@ function App() {
   const [isTestingModel, setIsTestingModel] = useState(false);
   const [exportBaseName, setExportBaseName] = useState('diagram');
   const [exportBackground, setExportBackground] = useState<ExportBackground>('white');
+  const [exportScale, setExportScale] = useState<ExportScale>(2);
   const [renderedCode, setRenderedCode] = useState('');
   const [renderedTheme, setRenderedTheme] = useState('');
   const [isRendering, setIsRendering] = useState(true);
@@ -979,6 +1007,14 @@ function App() {
     if (!stage || !diagramSize) return;
     updateDiagramViewport(
       fitDiagramViewport(stage.clientWidth, stage.clientHeight, diagramSize)
+    );
+  };
+
+  const fitPreviewToWidth = () => {
+    const stage = previewRef.current;
+    if (!stage || !diagramSize) return;
+    updateDiagramViewport(
+      fitDiagramWidthViewport(stage.clientWidth, stage.clientHeight, diagramSize)
     );
   };
 
@@ -1716,7 +1752,7 @@ function App() {
         if (format === 'png') {
           const png = await renderSvgToPng(
             preparedSvg,
-            2,
+            exportScale,
             exportBackground === 'transparent'
               ? undefined
               : EXPORT_BACKGROUNDS[exportBackground].color
@@ -1993,17 +2029,26 @@ function App() {
                 </button>
                 <button
                   className="subtle-button text-button"
-                  title="以原始大小顯示"
-                  aria-label="以原始大小顯示"
+                  title="以原始大小顯示 (100%)"
+                  aria-label="以原始大小顯示 (100%)"
                   disabled={!diagramSize || Boolean(syntaxError) || isRendering}
                   onClick={showPreviewAtOriginalSize}
                 >
                   1:1
                 </button>
                 <button
+                  className="subtle-button text-button"
+                  title="配合寬度"
+                  aria-label="配合寬度"
+                  disabled={!diagramSize || Boolean(syntaxError) || isRendering}
+                  onClick={fitPreviewToWidth}
+                >
+                  寬度
+                </button>
+                <button
                   className="subtle-button"
-                  title="適合預覽視窗"
-                  aria-label="適合預覽視窗"
+                  title="適合預覽視窗 (Fit)"
+                  aria-label="適合預覽視窗 (Fit)"
                   disabled={!diagramSize || Boolean(syntaxError) || isRendering}
                   onClick={fitPreviewToWindow}
                 >
@@ -2125,6 +2170,19 @@ function App() {
               >
                 {Object.entries(EXPORT_BACKGROUNDS).map(([value, option]) => (
                   <option key={value} value={value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              PNG 解析度 / 縮放
+              <select
+                value={exportScale}
+                onChange={(event) => setExportScale(Number(event.target.value) as ExportScale)}
+              >
+                {EXPORT_SCALES.map((option) => (
+                  <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
                 ))}

@@ -4,6 +4,11 @@ import Editor, { type OnMount } from '@monaco-editor/react';
 import mermaid from 'mermaid';
 import { SYSTEM_PROMPT } from '../shared/system-prompt.js';
 import {
+  formatMermaidParseError,
+  normalizeMermaidOutput,
+  validateMermaidEnvelope
+} from '../shared/mermaid-output.js';
+import {
   AlertTriangle,
   Bot,
   ChevronDown,
@@ -91,6 +96,10 @@ type ApiConfig = {
 type ChatMessage = {
   role: 'user' | 'assistant';
   content: string;
+  rawOutput?: {
+    content: string;
+    truncated: boolean;
+  };
 };
 
 const EXPORT_BACKGROUNDS = {
@@ -106,6 +115,18 @@ type ApiResponse = {
   text: string;
   isJson: boolean;
 };
+
+class ApiRequestError extends Error {
+  status: number;
+  details: unknown;
+
+  constructor(message: string, status: number, details: unknown) {
+    super(message);
+    this.name = 'ApiRequestError';
+    this.status = status;
+    this.details = details;
+  }
+}
 
 type PreparedSvg = {
   content: string;
@@ -168,17 +189,6 @@ const WORKSPACE_CAMERA_OFFSET_LIMIT =
   10_000;
 const WORKSPACE_CAMERA_STORAGE_KEY = 'mermaid-flow-editor.workspace-camera.v1';
 
-function cleanMermaid(text: string) {
-  const mermaidFence = text.match(/```mermaid\s*([\s\S]*?)```/i);
-  const genericFence = text.match(/```\s*([\s\S]*?)```/i);
-  let candidate = (mermaidFence?.[1] || genericFence?.[1] || text).trim();
-  const diagramStart = candidate.search(
-    /^(?:---\s*$|flowchart\b|graph\b|sequenceDiagram\b|classDiagram\b|stateDiagram(?:-v2)?\b|erDiagram\b|journey\b|gantt\b|pie\b|mindmap\b|timeline\b|quadrantChart\b|xychart-beta\b|block-beta\b)/im
-  );
-  if (diagramStart > 0) candidate = candidate.slice(diagramStart).trim();
-  return candidate;
-}
-
 function parseModelIds(payload: unknown) {
   const items = Array.isArray(payload)
     ? payload
@@ -214,6 +224,46 @@ function getAssistantContent(payload: unknown) {
       return typeof text === 'string' ? text : '';
     })
     .join('');
+}
+
+function getServerNormalizationRepairs(payload: unknown) {
+  if (!payload || typeof payload !== 'object') return [];
+  const metadata = (payload as { mermaidOutput?: unknown }).mermaidOutput;
+  if (!metadata || typeof metadata !== 'object') return [];
+  const repairs = (metadata as { repairs?: unknown }).repairs;
+  return Array.isArray(repairs)
+    ? repairs.filter((repair): repair is string => typeof repair === 'string')
+    : [];
+}
+
+type MermaidOutputMetadata = {
+  rawContent: string;
+  normalizedContent: string;
+  rawContentTruncated: boolean;
+  normalizedContentTruncated: boolean;
+};
+
+function getMermaidOutputMetadata(payload: unknown): MermaidOutputMetadata | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const metadata = (payload as { mermaidOutput?: unknown }).mermaidOutput;
+  if (!metadata || typeof metadata !== 'object') return null;
+  const value = metadata as Partial<MermaidOutputMetadata>;
+  if (typeof value.rawContent !== 'string' || typeof value.normalizedContent !== 'string') {
+    return null;
+  }
+  return {
+    rawContent: value.rawContent,
+    normalizedContent: value.normalizedContent,
+    rawContentTruncated: value.rawContentTruncated === true,
+    normalizedContentTruncated: value.normalizedContentTruncated === true
+  };
+}
+
+function getRawMermaidOutput(metadata: MermaidOutputMetadata | null, fallback: string) {
+  const rawContent = metadata?.rawContent || fallback;
+  return rawContent
+    ? { content: rawContent, truncated: metadata?.rawContentTruncated === true }
+    : undefined;
 }
 
 function downloadBlob(name: string, type: string, content: BlobPart) {
@@ -317,7 +367,11 @@ async function requestApiJson(
       const payload = await readApiResponse(response);
 
       if (!response.ok) {
-        throw new Error(getApiErrorMessage(response, payload, 'API 請求失敗'));
+        throw new ApiRequestError(
+          getApiErrorMessage(response, payload, 'API 請求失敗'),
+          response.status,
+          payload.data
+        );
       }
       if (!payload.text) throw new Error('API 回傳空內容。');
       if (!payload.isJson) {
@@ -1231,8 +1285,7 @@ function App() {
         }
       } catch (error) {
         if (!cancelled) {
-          const message = error instanceof Error ? error.message : String(error);
-          setSyntaxError(message);
+          setSyntaxError(formatMermaidParseError(error));
           setRenderedCode('');
           setRenderedTheme('');
         }
@@ -1555,16 +1608,31 @@ function App() {
         CHAT_TIMEOUT_MS,
         controller.signal
       );
-      const content = cleanMermaid(getAssistantContent(data));
-      if (!content) throw new Error('AI 沒有回傳 Mermaid 內容。');
-      try {
-        await mermaid.parse(content);
-      } catch {
+      const assistantRawContent = getAssistantContent(data);
+      const metadata = getMermaidOutputMetadata(data);
+      const normalized = normalizeMermaidOutput(assistantRawContent);
+      const content = normalized.code;
+      const envelope = validateMermaidEnvelope(content);
+      if (!envelope.valid) {
         setChatLog((items) => [
           ...items,
           {
             role: 'assistant',
-            content: `AI 回傳的 Mermaid 無法解析，已保留目前圖表。\n\n${content}`
+            content: `AI 回傳內容無法安全套用，已保留目前圖表。\n${envelope.error}`,
+            rawOutput: getRawMermaidOutput(metadata, assistantRawContent)
+          }
+        ]);
+        return;
+      }
+      try {
+        await mermaid.parse(content);
+      } catch (error) {
+        setChatLog((items) => [
+          ...items,
+          {
+            role: 'assistant',
+            content: `AI 回傳的 Mermaid 無法解析，已保留目前圖表。\n${formatMermaidParseError(error)}`,
+            rawOutput: getRawMermaidOutput(metadata, assistantRawContent)
           }
         ]);
         return;
@@ -1581,12 +1649,33 @@ function App() {
         return;
       }
       updateCode(content);
-      setChatLog((items) => [...items, { role: 'assistant', content }]);
-    } catch (error) {
-      if (controller.signal.aborted || isAbortError(error)) return;
+      const repairs = [...new Set([
+        ...getServerNormalizationRepairs(data),
+        ...normalized.repairs
+      ])];
       setChatLog((items) => [
         ...items,
-        { role: 'assistant', content: `呼叫失敗：${error instanceof Error ? error.message : String(error)}` }
+        {
+          role: 'assistant',
+          content: repairs.length
+            ? `已自動修復：${repairs.join('、')}\n\n${content}`
+            : content
+        }
+      ]);
+    } catch (error) {
+      if (controller.signal.aborted || isAbortError(error)) return;
+      const rejectedMermaid = error instanceof ApiRequestError && error.status === 422;
+      setChatLog((items) => [
+        ...items,
+        {
+          role: 'assistant',
+          content: rejectedMermaid
+            ? `AI 回傳的 Mermaid 無法安全套用，已保留目前圖表。\n${error.message}`
+            : `呼叫失敗：${error instanceof Error ? error.message : String(error)}`,
+          rawOutput: rejectedMermaid
+            ? getRawMermaidOutput(getMermaidOutputMetadata(error.details), '')
+            : undefined
+        }
       ]);
     } finally {
       if (chatControllerRef.current === controller) {
@@ -2179,6 +2268,13 @@ function App() {
             <article key={`${message.role}-${index}`} className={message.role}>
               <strong>{message.role === 'user' ? 'You' : 'AI'}</strong>
               <pre>{message.content}</pre>
+              {message.rawOutput ? (
+                <details className="raw-ai-output">
+                  <summary>檢視 AI 原始輸出（未套用）</summary>
+                  <pre>{message.rawOutput.content}</pre>
+                  {message.rawOutput.truncated ? <small>內容已截斷。</small> : null}
+                </details>
+              ) : null}
             </article>
           ))}
         </div>

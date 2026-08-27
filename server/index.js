@@ -2,11 +2,17 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AiPolicyError, validateCustomMessages } from './mermaid-ai-policy.js';
+import { SYSTEM_PROMPT } from '../shared/system-prompt.js';
+import {
+  normalizeMermaidOutput,
+  validateMermaidEnvelope
+} from '../shared/mermaid-output.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DEFAULT_MODELS_TIMEOUT_MS = 15_000;
 const DEFAULT_CHAT_TIMEOUT_MS = 120_000;
+const MERMAID_METADATA_CONTENT_LIMIT = 12_000;
 
 class UpstreamTimeoutError extends Error {}
 class ClientDisconnectedError extends Error {}
@@ -100,6 +106,60 @@ function isNonEmptyString(value) {
   return typeof value === 'string' && Boolean(value.trim());
 }
 
+function createMermaidOutputMetadata(rawContent, normalizedContent, repairs) {
+  return {
+    rawContent: rawContent.slice(0, MERMAID_METADATA_CONTENT_LIMIT),
+    normalizedContent: normalizedContent.slice(0, MERMAID_METADATA_CONTENT_LIMIT),
+    rawContentTruncated: rawContent.length > MERMAID_METADATA_CONTENT_LIMIT,
+    normalizedContentTruncated: normalizedContent.length > MERMAID_METADATA_CONTENT_LIMIT,
+    repairs
+  };
+}
+
+function sanitizeMermaidChatResponse(upstream) {
+  if (upstream.status < 200 || upstream.status >= 300) return upstream;
+
+  let payload;
+  try {
+    payload = JSON.parse(upstream.text);
+  } catch {
+    return {
+      status: 502,
+      contentType: 'application/json',
+      text: JSON.stringify({ error: 'AI 回傳了無法解析的回應格式。' })
+    };
+  }
+
+  const message = payload?.choices?.[0]?.message;
+  const rawContent = message?.content;
+  const content = typeof rawContent === 'string'
+    ? rawContent
+    : Array.isArray(rawContent)
+      ? rawContent.map((part) => typeof part === 'string' ? part : part?.text || '').join('')
+      : '';
+  const normalized = normalizeMermaidOutput(content);
+  const metadata = createMermaidOutputMetadata(content, normalized.code, normalized.repairs);
+  const validation = validateMermaidEnvelope(normalized.code);
+  if (!validation.valid) {
+    return {
+      status: 422,
+      contentType: 'application/json',
+      text: JSON.stringify({
+        error: `AI 回傳的 Mermaid 未通過安全檢查：${validation.error}`,
+        mermaidOutput: metadata
+      })
+    };
+  }
+
+  message.content = normalized.code;
+  payload.mermaidOutput = metadata;
+  return {
+    status: upstream.status,
+    contentType: 'application/json',
+    text: JSON.stringify(payload)
+  };
+}
+
 export function createApp(options = {}) {
   const app = express();
   const fetchImpl = options.fetchImpl || fetch;
@@ -166,7 +226,7 @@ export function createApp(options = {}) {
   });
 
   app.post('/api/chat', async (req, res) => {
-    const { model, messages, temperature } = req.body || {};
+    const { model, messages, operation, temperature } = req.body || {};
 
     if (!isNonEmptyString(model)) {
       return res.status(400).json({ error: 'model is required.' });
@@ -193,6 +253,12 @@ export function createApp(options = {}) {
     let upstreamMessages;
     try {
       upstreamMessages = validateCustomMessages(messages);
+      if (operation === 'mermaid') {
+        upstreamMessages = [
+          { role: 'system', content: SYSTEM_PROMPT },
+          ...upstreamMessages.filter((message) => message.role !== 'system')
+        ];
+      }
     } catch (error) {
       return res.status(400).json({
         error: error instanceof AiPolicyError ? error.message : 'messages are not valid.'
@@ -227,7 +293,10 @@ export function createApp(options = {}) {
         chatTimeoutMs
       );
 
-      return res.status(upstream.status).type(upstream.contentType).send(upstream.text);
+      const response = operation === 'mermaid'
+        ? sanitizeMermaidChatResponse(upstream)
+        : upstream;
+      return res.status(response.status).type(response.contentType).send(response.text);
     } catch (error) {
       if (error instanceof ClientDisconnectedError || res.destroyed) return;
       if (error instanceof UpstreamTimeoutError) {

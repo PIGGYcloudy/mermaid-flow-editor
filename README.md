@@ -1,87 +1,88 @@
 # Mermaid Flow Editor
 
-**English** · [繁體中文](README.zh-TW.md)
+[English version](README.en.md) · **繁體中文**
 
-A self-hosted Mermaid workspace with live preview, export tools, and a BYOK AI
-assistant for OpenAI-compatible APIs.
+> 目前應用程式介面預設為中文，多語言切換功能將於未來版本支援。
+
+一個可自行部署的 Mermaid 工作區，提供即時預覽、匯出工具，以及支援
+OpenAI 相容 API 的 BYOK AI 助手。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-2f6f68.svg)](LICENSE)
 [![Node.js 22+](https://img.shields.io/badge/Node.js-22%2B-43853d.svg)](package.json)
 [![CI](https://github.com/PIGGYcloudy/mermaid-flow-editor/actions/workflows/ci.yml/badge.svg)](https://github.com/PIGGYcloudy/mermaid-flow-editor/actions/workflows/ci.yml)
 
-> This project was built and open-sourced with help from
-> [OpenAI Codex](https://openai.com/codex/). It is an independent community
-> project, not an official OpenAI product.
+> 本專案由 [OpenAI Codex](https://openai.com/codex/) 協作製作並完成開源。
+> 這是獨立的社群專案，並非 OpenAI 官方產品。
 
-> **BYOK only:** the project has no account system and stores no server-side AI
-> credentials. A user-provided API key stays in browser `sessionStorage` and is
-> sent through the application proxy only for that user's AI requests.
+> **僅支援 BYOK：**本專案沒有帳號系統，也不會在伺服器端儲存 AI 憑證。
+> 使用者提供的 API 金鑰只會保存在瀏覽器的 `sessionStorage`，並且只會在該
+> 使用者發出 AI 請求時，經由應用程式 proxy 傳送。
 
-![Mermaid Flow Editor feature tour: workspace zoom, resizable and movable windows, background switching, and AI rewriting](docs/assets/mermaid-flow-editor-feature-tour.gif)
+![Mermaid Flow Editor 功能導覽：工作區縮放、可調整大小與移動的視窗、背景切換及 AI 改寫](docs/assets/mermaid-flow-editor-feature-tour.gif)
 
-## Features
+## 主要功能
 
-- Monaco Mermaid editor with live rendering and readable syntax errors
-- Generate, rewrite, and repair Mermaid with any OpenAI-compatible API
-- Load models from the provider's `/models` endpoint and test connections
-- Movable and scalable Editor, Preview, and AI Assistant windows
-- Independent workspace and diagram pan and zoom controls
-- Import `.mmd`, `.mermaid`, and `.txt`
-- Export Mermaid, SVG, PNG, and PDF
-- Mermaid strict security mode
-- Docker image and `/healthz` endpoint
+- 使用 Monaco 的 Mermaid 編輯器，支援即時渲染與易讀的語法錯誤訊息
+- 使用任一 OpenAI 相容 API 生成、改寫與修復 Mermaid 圖表
+- 從供應商的 `/models` 端點載入模型清單並測試連線
+- 可移動及調整大小的 Editor、Preview 與 AI Assistant 視窗
+- 工作區與圖表各自擁有獨立的平移與縮放控制
+- 匯入 `.mmd`、`.mermaid` 與 `.txt`
+- 匯出 Mermaid、SVG、PNG 與 PDF
+- Mermaid 嚴格安全模式
+- Docker 映像檔與 `/healthz` 健康檢查端點
 
-Editing, previewing, and exporting work without configuring AI.
+不設定 AI 也能使用編輯、預覽與匯出功能。
 
-## Deploy with Docker
+## 使用 Docker 部署
 
-Docker is the supported production deployment path. The same Compose workflow
-works with Docker Engine on Linux and Docker Desktop on Windows. On Windows,
-use Docker Desktop in Linux containers mode.
+Docker 是本專案支援的正式環境部署方式。Linux 使用 Docker Engine，Windows
+使用 Docker Desktop；Windows 請切換至 Linux 容器模式。兩個平台使用
+相同的 Docker Compose 工作流程。
 
-Linux:
+Linux：
 
 ```bash
 cp .env.example .env
 docker compose up -d --build
 ```
 
-Windows PowerShell:
+Windows PowerShell：
 
 ```powershell
 Copy-Item .env.example .env
 docker compose up -d --build
 ```
 
-Open `http://localhost:3000`. Confirm the deployment and inspect logs with:
+部署完成後開啟 `http://localhost:3000`。使用下列指令確認部署狀態與查看記錄：
 
 ```bash
 docker compose ps
 docker compose logs -f app
 ```
 
-Stop and remove the application container with:
+使用下列指令停止並移除應用程式容器：
 
 ```bash
 docker compose down
 ```
 
-Tagged releases and the manual publish workflow also provide a prebuilt image:
+帶有版本 tag 的發布版本與手動發布工作流程也會提供預先建置的映像檔：
 
 ```text
 ghcr.io/piggycloudy/mermaid-flow-editor-byok
 ```
 
-The container includes a `/healthz` endpoint and uses the Compose health check
-and `unless-stopped` restart policy. Native Node.js deployment as a background
-service is not currently documented or supported; use Docker for production.
+容器提供 `/healthz` 端點，並使用 Compose 健康檢查與
+`unless-stopped` 重新啟動策略。目前不提供原生 Node.js 背景服務的部署文件，
+也不支援以此方式部署；正式環境請使用 Docker。
 
-## Local development
+## 本機開發
 
-Local development requires Node.js 22.12 or newer. This two-process workflow is
-for development, not production deployment.
+本機開發需要 Node.js 22.12 或更新版本。以下雙程序工作流程僅供開發使用，
+不是正式環境部署方式。
 
-Linux or macOS:
+Linux 或 macOS：
 
 ```bash
 npm ci
@@ -89,7 +90,7 @@ cp .env.example .env
 npm run server
 ```
 
-Windows PowerShell:
+Windows PowerShell：
 
 ```powershell
 npm ci
@@ -97,60 +98,57 @@ Copy-Item .env.example .env
 npm run server
 ```
 
-In a second terminal, run:
+在第二個終端機執行：
 
 ```bash
 npm run dev
 ```
 
-Open `http://localhost:5173`. CI validates installation, server tests, and the
-production build on both Linux and Windows. To use AI, enter:
+開啟 `http://localhost:5173`。CI 會在 Linux 與 Windows 驗證套件安裝、伺服器
+測試及正式版本建置。若要使用 AI，請輸入：
 
-- **API URL:** an OpenAI-compatible base URL, such as
+- **API URL：**OpenAI 相容 API 的基礎 URL，例如
   `https://api.openai.com/v1`
-- **API Key:** your provider token
-- **Model:** select a discovered model or enter its model ID
+- **API Key：**供應商提供的權杖
+- **Model：**從發現的模型清單選擇，或直接輸入模型 ID
 
-The API URL and model are saved in localStorage. The API key is kept only in
-`sessionStorage` and is cleared when the tab closes. The application never
-writes it to a database or disk.
+API URL 與模型會儲存在瀏覽器的 localStorage。API 金鑰只會保存在
+`sessionStorage`，關閉分頁後即清除。應用程式不會把金鑰寫入資料庫或磁碟。
 
-### BYOK model setup
+### BYOK 模型設定
 
-Expand **Model settings** to connect an OpenAI-compatible endpoint. AI is
-optional: editing, previewing, and exporting remain available without an API
-URL or key.
+展開 **模型設定** 即可連接 OpenAI 相容 API 的端點。AI 並非必要功能；
+沒有設定 API URL 或金鑰時，仍可正常編輯、預覽及匯出圖表。
 
-![Expanded BYOK settings for an OpenAI-compatible API](docs/assets/mermaid-flow-editor-byok-settings.png)
+![展開的 OpenAI 相容 API BYOK 設定](docs/assets/mermaid-flow-editor-byok-settings.png)
 
-## Internet-facing deployments
+## 對外公開部署
 
-This project does not include authentication or access control. Add it at your
-reverse proxy, VPN, or hosting platform when needed, and use HTTPS.
+本專案沒有內建驗證或存取控制。需要限制存取時，請在反向代理伺服器、VPN 或
+託管平台加入驗證，並使用 HTTPS。
 
-The proxy accepts any HTTP(S) API host by default for convenient local and
-private use. For an internet-facing deployment, strongly consider an allowlist
-to reduce SSRF risk:
+為方便本機與私人環境使用，代理伺服器預設接受任何 HTTP(S) API 主機。若服務會對
+網際網路公開，強烈建議設定允許清單，以降低 SSRF 風險：
 
 ```dotenv
 AI_API_ALLOWED_HOSTS=api.openai.com,openrouter.ai
 ```
 
-When configured, only listed `host[:port]` values are accepted and upstream
-redirects are not followed. This is an operator control, not a requirement for
-ordinary local use. See [SECURITY.md](SECURITY.md) for more guidance.
+設定後只接受清單內的 `host[:port]` 值，且不會跟隨上游重新導向。這是部署者
+的控制項，不是一般本機使用的必要設定。更多注意事項請見
+[SECURITY.md](SECURITY.md)。
 
-## Configuration
+## 設定
 
-| Variable | Purpose | Default |
+| 環境變數 | 用途 | 預設值 |
 | --- | --- | --- |
-| `APP_API_PORT` / `PORT` | Development / production server port | `3001` / `3000` |
-| `AI_API_ALLOWED_HOSTS` | Optional `host[:port]` proxy allowlist | unrestricted |
-| `MODELS_TIMEOUT_MS` | Model-list timeout | `15000` |
-| `CHAT_TIMEOUT_MS` | AI chat timeout | `120000` |
-| `JSON_BODY_LIMIT` | JSON request body limit | `256kb` |
+| `APP_API_PORT` / `PORT` | 開發／正式環境伺服器連接埠 | `3001` / `3000` |
+| `AI_API_ALLOWED_HOSTS` | 可選的 `host[:port]` 代理伺服器允許清單 | 不限制 |
+| `MODELS_TIMEOUT_MS` | 模型清單請求逾時時間 | `15000` |
+| `CHAT_TIMEOUT_MS` | AI 聊天請求逾時時間 | `120000` |
+| `JSON_BODY_LIMIT` | JSON 請求本文大小上限 | `256kb` |
 
-## Validation
+## 驗證
 
 ```bash
 npm test
@@ -158,20 +156,20 @@ npm run build
 npm run test:browser
 ```
 
-## Architecture
+## 架構
 
-The Vite/React client edits and renders Mermaid diagrams. A small Express proxy
-validates BYOK requests, normalizes OpenAI-compatible URLs, forwards `/models`
-and `/chat/completions`, and applies the optional host allowlist. The server has
-no user database and no built-in or shared AI credential.
+Vite/React 用戶端負責編輯與渲染 Mermaid 圖表。小型 Express 代理伺服器會驗證
+BYOK 請求、正規化 OpenAI 相容 URL、轉送 `/models` 與
+`/chat/completions`，並套用可選的主機允許清單。伺服器沒有使用者資料庫，
+也沒有內建或共用的 AI 憑證。
 
-## Contributing
+## 參與貢獻
 
-Issues and focused pull requests are welcome. Read
-[CONTRIBUTING.md](CONTRIBUTING.md) first. Report suspected vulnerabilities
-privately as described in [SECURITY.md](SECURITY.md).
+歡迎提出 issue 與範圍明確的 pull request。請先閱讀
+[CONTRIBUTING.md](CONTRIBUTING.md)；安全問題請依照
+[SECURITY.md](SECURITY.md) 使用私密管道回報。
 
-## License
+## 授權
 
-[MIT](LICENSE). Mermaid Flow Editor is independent and is not affiliated with
-Mermaid Chart, OpenAI, or any AI provider.
+採用 [MIT License](LICENSE)。Mermaid Flow Editor 是獨立專案，與 Mermaid
+Chart、OpenAI 或任何 AI 供應商均無從屬關係。

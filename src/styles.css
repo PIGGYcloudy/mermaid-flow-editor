@@ -546,6 +546,15 @@ details pre {
   font-size: 12px;
 }
 
+.raw-ai-output {
+  margin-top: 10px;
+}
+
+.raw-ai-output small {
+  display: block;
+  margin-top: 8px;
+}
+
 .spin {
   animation: spin 0.9s linear infinite;
 }

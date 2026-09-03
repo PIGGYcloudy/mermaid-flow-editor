@@ -934,8 +934,12 @@ try {
   await waitFor(
     () =>
       execute(`
-        return [...document.querySelectorAll('.chat-log .assistant pre')]
-          .some((item) => item.textContent.includes('無法解析，已保留目前圖表'));
+        return [...document.querySelectorAll('.chat-log .assistant')]
+          .some((item) =>
+            item.textContent.includes('無法安全套用，已保留目前圖表') &&
+            item.querySelector('.raw-ai-output summary')?.textContent.includes('檢視 AI 原始輸出') &&
+            item.querySelector('.raw-ai-output pre')?.textContent.includes('這不是 Mermaid 圖表。')
+          );
       `),
     'invalid Mermaid response rejection'
   );
